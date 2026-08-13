@@ -1,0 +1,67 @@
+==================
+Indented blocks
+==================
+foo
+  bar
+  baz qux
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line head: (atom))
+      (line head: (atom) (atom)))))
+
+==================
+Nested blocks
+==================
+a
+  b
+    c
+  d
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line head: (atom)
+        (block
+          (line head: (atom))))
+      (line head: (atom)))))
+
+==================
+Blank and comment lines in blocks
+==================
+a
+
+  ; comment
+  b
+---
+(source_file
+  (line head: (atom)
+    (block
+      (comment)
+      (line head: (atom)))))
+
+==================
+Blocks closing at end of file
+==================
+foo
+  bar
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line head: (atom)))))
+
+==================
+Nested blocks closing at end of file
+==================
+a
+  b
+    c
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line head: (atom)
+        (block
+          (line head: (atom)))))))

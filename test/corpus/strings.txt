@@ -1,0 +1,31 @@
+==================
+Strings and characters
+==================
+display "Hello World!"
+#\a #\space
+---
+(source_file
+  (line head: (atom) (string))
+  (line head: (char) (char)))
+
+==================
+Multiline string
+==================
+define : stringy s
+  string-append s "reversed:
+capitalized"
+---
+(source_file
+  (line head: (atom)
+    (colon_list
+      (atom) (atom))
+    (block
+      (line head: (atom) (atom) (string)))))
+
+==================
+Escapes in strings
+==================
+"say \"hi\""
+---
+(source_file
+  (line head: (string)))

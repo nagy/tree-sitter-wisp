@@ -1,0 +1,20 @@
+==================
+No trailing newline
+==================
+foo
+  bar
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line head: (atom)))))
+
+==================
+Trailing blank lines
+==================
+foo
+
+
+---
+(source_file
+  (line head: (atom)))

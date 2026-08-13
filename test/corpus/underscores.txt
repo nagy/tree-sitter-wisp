@@ -1,0 +1,31 @@
+==================
+Underscore indentation
+==================
+let
+_ : x 1
+__  y 2
+_ body
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line
+        (underscore_indent)
+        (colon_list
+          (atom) (number))
+        (block
+          (line
+            (underscore_indent)
+            head: (atom)
+            (number))))
+      (line
+        (underscore_indent)
+        head: (atom)))))
+
+==================
+Escaped leading underscore
+==================
+\___baz
+---
+(source_file
+  (line head: (atom)))

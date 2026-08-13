@@ -1,0 +1,52 @@
+==================
+Continuation lines
+==================
+a b c d e
+  . f g h
+  . i j k
+---
+(source_file
+  (line head: (atom) (atom) (atom) (atom) (atom)
+    (block
+      (continuation
+        (atom) (atom) (atom))
+      (continuation
+        (atom) (atom) (atom)))))
+
+==================
+Continuation with dotted tail
+==================
+define : foo . args
+---
+(source_file
+  (line head: (atom)
+    (colon_list
+      (atom)
+      (atom)
+      (atom))))
+
+==================
+Continuation with string
+==================
+string-append "Hello"
+  . " " "World"
+---
+(source_file
+  (line head: (atom) (string)
+    (block
+      (continuation
+        (string) (string)))))
+
+==================
+Sibling after continuation
+==================
+a b c d e
+  . f g h
+  x y
+---
+(source_file
+  (line head: (atom) (atom) (atom) (atom) (atom)
+    (block
+      (continuation
+        (atom) (atom) (atom))
+      (line head: (atom) (atom)))))

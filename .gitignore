@@ -1,0 +1,21 @@
+# Node artifacts
+build/
+node_modules/
+package-lock.json
+
+# C artifacts
+*.a
+*.so
+*.pc
+
+# Grammar volatiles
+*.wasm
+*.o
+
+# Archives
+*.tar.gz
+*.tgz
+*.zip
+
+# Example dirs
+/examples/*/

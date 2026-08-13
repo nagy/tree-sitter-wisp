@@ -1,0 +1,82 @@
+==================
+Inline colon
+==================
+define : factorial n
+---
+(source_file
+  (line head: (atom)
+    (colon_list
+      (atom)
+      (atom))))
+
+==================
+Headless colon
+==================
+: a b
+---
+(source_file
+  (line
+    (colon_list
+      (atom)
+      (atom))))
+
+==================
+Colon at end of line
+==================
+let :
+  display "hi"
+---
+(source_file
+  (line head: (atom)
+    (colon_list)
+    (block
+      (line head: (atom) (string)))))
+
+==================
+Nested colons
+==================
+foo : bar : baz
+---
+(source_file
+  (line head: (atom)
+    (colon_list
+      (atom)
+      (colon_list
+        (atom)))))
+
+==================
+Colon-only line
+==================
+let
+  :
+    msg "hi"
+  display msg
+---
+(source_file
+  (line head: (atom)
+    (block
+      (line
+        (colon_list)
+        (block
+          (line head: (atom) (string))))
+      (line head: (atom) (atom)))))
+
+==================
+Dot inside colon group
+==================
+define : foo . args
+---
+(source_file
+  (line head: (atom)
+    (colon_list
+      (atom)
+      (atom)
+      (atom))))
+
+==================
+Escaped colon is a symbol
+==================
+foo \: bar
+---
+(source_file
+  (line head: (atom) (atom) (atom)))

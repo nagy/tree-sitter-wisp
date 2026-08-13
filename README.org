@@ -1,0 +1,183 @@
+#+title:   tree-sitter-wisp
+#+date:    <2026-08-13>
+#+options: toc:2
+
+* Wisp grammar for tree-sitter
+
+A [[https://srfi.schemers.org/srfi-119/srfi-119.html][Wisp]] (SRFI-119: whitespace-to-lisp Scheme) grammar for
+[[https://tree-sitter.github.io/tree-sitter/][tree-sitter]].
+
+#+begin_src wisp
+define : factorial n
+  if : zero? n
+    . 1
+    * n : factorial {n - 1}
+#+end_src
+
+* Design
+
+Wisp is an indentation-to-parens preprocessor, not a language of its own:
+every construct reduces to ordinary S-expressions.
+This grammar produces a **layout-first concrete syntax tree** instead of a
+semantic one:
+
+#+begin_src scheme
+(source_file
+  (line head: (atom)
+    (colon_list (atom) (atom))
+    (block
+      (line head: (atom)
+        (colon_list (atom) (atom))
+        (block
+          (continuation (number))
+          (line head: (atom) (atom)
+            (colon_list (atom)
+              (curly_list (atom) (atom) (number)))))))))
+#+end_src
+
+Every source construct is a node — ~line~, ~block~, ~continuation~,
+~colon_list~, ~paren_list~, ~bracket_list~, ~curly_list~, ~vector~,
+~line_prefix~ — and byte ranges map 1:1 to the source.
+The S-expression view ~(define (factorial n) (if (zero? n) 1 (* n (factorial (- n 1)))))~
+is recovered by a small tree walk or query over this shape; the reverse
+(rebuilding the layout from a semantic tree) is impossible, which is why
+the grammar does not try.
+
+** Node inventory
+
+| Node                                  | Meaning                                                                    |
+|---------------------------------------+----------------------------------------------------------------------------|
+| ~line~                                | One logical line; ~head~ field = first datum (the called procedure)        |
+| ~continuation~                        | A line starting with ~. ~ — splices into the enclosing list                |
+| ~colon_list~                          | A ~ : ~ group — a list closed at end of line                               |
+| ~block~                               | Indented children of a line                                                |
+| ~underscore_indent~                   | A run of ~_~ at line start followed by a space — counts as indentation     |
+| ~line_prefix~                         | ~'~, ~,~, ~`~, ~#'~, ~#,~, ~#`~, ~#@~, ~#,@~ before the line's first datum |
+| ~paren_list~ / ~bracket_list~         | Parenthesized / bracketed S-expressions; wisp parsing is disabled inside   |
+| ~curly_list~                          | SRFI-105 curly-infix expression; syntax preserved, never transformed       |
+| ~vector~                              | ~#(...)~, ~#u8(...)~, ~#s(...)~, ...                                       |
+| ~atom~, ~number~, ~string~, ~char~    | Leaf datums                                                                |
+| ~comment~, ~block_comment~, ~shebang~ | Comments                                                                   |
+
+** How the indentation scanner works
+
+~src/scanner.c~ emits zero-width ~_newline~ / ~_indent~ / ~_dedent~
+tokens and the visible ~line_prefix~ token, mirroring the reference
+implementation ~wisp.py~:
+
+- indentation is leading whitespace; a run of ~_~ at the very start of a
+  line counts as whitespace (~___ x~ = 4 columns), ~\~ escapes that;
+- blank and comment-only lines never touch the indentation stack;
+- deeper line → ~_indent~, shallower → one ~_dedent~ per closed level;
+- ~_~-indented and ~.~-continuation lines participate in the stack like
+  any other line;
+- a line prefix is emitted from the boundary call because tree-sitter
+  excludes external tokens from reduce lookaheads — after the previous
+  line reduces, the lexer may never consult the scanner at the line
+  start itself;
+- the ~underscore_indent~ node is *not* a scanner token: measuring the
+  next line's indentation consumes the run (it counts as columns) and
+  there is no rewind within a scanner call, so the generated lexer
+  matches it instead (~_+~ followed by a space, only valid at line
+  starts, where longest-match beats ~atom~).
+
+Because wisp disables itself inside brackets and strings, the generated
+lexer absorbs all newlines inside ~paren_list~ / ~bracket_list~ /
+~curly_list~ / ~vector~ / ~string~ tokens, and the scanner is never
+consulted there.
+
+** Known deviations from the reference implementation
+
+- A ~#|~ block comment starting a line does not affect the indentation
+  stack (the reference implementation has undefined behavior here;
+  SRFI-119 asks authors to avoid ~#|~ at the beginning of lines).
+- A dedent to an indentation level that was never defined is repaired by
+  opening a block at that level instead of raising an error.
+- Leading indentation on the first line of a file is ignored.
+- A lone ~.~ on a line parses as an empty ~continuation~ (the SRFI
+  reserves it as a syntax error).
+- ~{...}~ and ~#(...)~ are accepted at the start of a line (curly-infix
+  there officially requires a leading ~.~).
+- Scheme number literals beyond plain decimals (radix prefixes, ratios,
+  complex numbers) fall back to ~atom~.
+- A mid-line ~.~ parses as an ordinary ~atom~ (tail-dot notation in
+  ~define : foo . args~); the reference implementation treats it as a
+  plain symbol too.
+
+* Usage
+
+** Nix
+
+#+begin_src sh
+nix develop          # tree-sitter CLI, node, gcc
+tree-sitter generate
+tree-sitter test
+#+end_src
+
+** Without nix
+
+#+begin_src sh
+npm install          # installs tree-sitter-cli
+npx tree-sitter generate
+npx tree-sitter test
+#+end_src
+
+** Emacs
+
+~treesit-install-language-grammar~ compiles ~src/*.c~ directly from a
+clone of this repository:
+
+#+begin_src elisp
+(treesit-install-language-grammar 'wisp)
+#+end_src
+
+** Bindings
+
+- C: ~make~ builds ~libtree-sitter-wisp.{a,so}~ (or use the parser
+  sources directly, as Emacs and Neovim do).
+- Node: ~npm install~ builds the native addon; the ~tree-sitter~ package
+  is an optional peer and must be installed explicitly.  Note that
+  tree-sitter 0.25's node binding does not compile against Node 24
+  headers — use Node 22.
+- WASM: ~npx tree-sitter build --wasm~ (the wasi-sdk binaries need
+  ~patchelf~ on NixOS, which has no ~/lib64~ loader).
+
+* Queries
+
+~queries/~ ships ~highlights.scm~, ~indents.scm~, and ~locals.scm~.
+
+* Tests
+
+~test/corpus/~ covers the core constructs with exact expected trees.
+~test/wisp-suite/~ vendors the reference implementation's test suite
+(~.w~/~.scm~ pairs, expat-licensed, from
+[[https://hg.sr.ht/~arnebab/wisp][hg.sr.ht/~arnebab/wisp]]); the grammar must parse every ~.w~ file
+without ERROR nodes (~test/parse-wisp-suite.sh~), and the ~.scm~ files
+serve as semantic oracles when developing the S-expression query view.
+
+* Future: an Emacs wisp-ts-mode
+
+A ~wisp-ts-mode~ replacing ~wisp-mode.el~'s font-lock/navigation/
+indentation with treesit (Emacs 31: ~treesit-font-lock-rules~,
+~treesit-indent-rules~, ~treesit-defun-*~) is planned as a separate
+project built on top of this grammar.
+Open questions for that milestone:
+
+- keep ~wisp-mode.el~'s tab/backtab indent-cycling (indentation *is*
+  syntax in wisp — derived rules may be wrong-headed) vs
+  ~treesit-indent-rules~;
+- reimplement ~wisp-color-indentation-minor-mode~ over the tree;
+- keep geiser eval + ~C-c C-w~ wisp2lisp (they operate on buffer text,
+  independent of the grammar).
+
+* License
+
+AGPL-3.0-or-later, except the vendored reference test suite in
+~test/wisp-suite/~ which stays expat-licensed (upstream wisp).
+
+* References
+
+- [[https://srfi.schemers.org/srfi-119/srfi-119.html][SRFI-119]]: the specification.
+- [[https://hg.sr.ht/~arnebab/wisp][wisp]]: reference implementation (~wisp.py~), Emacs mode, and test
+  suite, by Arne Babenhauserheide.
+- [[https://srfi.schemers.org/srfi-105/srfi-105.html][SRFI-105]]: curly-infix expressions.

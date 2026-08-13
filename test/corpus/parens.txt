@@ -1,0 +1,59 @@
+==================
+Parenthesized and bracketed lists
+==================
+foo (bar baz) [qux]
+---
+(source_file
+  (line head: (atom)
+    (paren_list
+      (atom) (atom))
+    (bracket_list
+      (atom))))
+
+==================
+Dotted pair
+==================
+(a b . c)
+---
+(source_file
+  (line head: (paren_list
+    (atom) (atom) (atom))))
+
+==================
+Multiline parenthesized expression
+==================
+define foo (+ 1
+  (* 2 3))
+bar
+---
+(source_file
+  (line head: (atom) (atom)
+    (paren_list
+      (atom) (number)
+      (paren_list
+        (atom) (number) (number))))
+  (line head: (atom)))
+
+==================
+Vectors
+==================
+#(1 2 3)
+#u8(1)
+---
+(source_file
+  (line head: (vector
+    (number) (number) (number)))
+  (line head: (vector
+    (number))))
+
+==================
+Curly infix
+==================
+* n : factorial {n - 1}
+---
+(source_file
+  (line head: (atom) (atom)
+    (colon_list
+      (atom)
+      (curly_list
+        (atom) (atom) (number)))))

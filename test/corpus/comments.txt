@@ -1,0 +1,28 @@
+==================
+Comments and shebang
+==================
+#!/usr/bin/env -S guile
+; leading comment
+foo ; trailing comment
+#| block
+comment |#
+bar
+---
+(source_file
+  (shebang)
+  (comment)
+  (line head: (atom) (comment))
+  (block_comment)
+  (line head: (atom)))
+
+==================
+Comment lines do not affect blocks
+==================
+a
+  ; deeper comment
+b
+---
+(source_file
+  (line head: (atom))
+  (comment)
+  (line head: (atom)))

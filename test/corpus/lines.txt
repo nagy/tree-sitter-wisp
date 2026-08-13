@@ -1,0 +1,20 @@
+==================
+Simple lines
+==================
+foo
+bar baz
+42 "str" 'qux
+---
+(source_file
+  (line head: (atom))
+  (line head: (atom) (atom))
+  (line head: (number) (string) (atom)))
+
+==================
+Only a parenthesized list
+==================
+(a b)
+---
+(source_file
+  (line head: (paren_list
+    (atom) (atom))))

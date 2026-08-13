@@ -1,0 +1,33 @@
+==================
+Line prefixes
+==================
+' foo bar
+, baz
+` qux
+#' x
+#@ y
+---
+(source_file
+  (line
+    (line_prefix)
+    head: (atom) (atom))
+  (line
+    (line_prefix)
+    head: (atom))
+  (line
+    (line_prefix)
+    head: (atom))
+  (line
+    (line_prefix)
+    head: (atom))
+  (line
+    (line_prefix)
+    head: (atom)))
+
+==================
+Quote without space is a symbol
+==================
+'foo
+---
+(source_file
+  (line head: (atom)))

@@ -1,0 +1,35 @@
+{
+  "grammars": [
+    {
+      "name": "wisp",
+      "camelcase": "Wisp",
+      "scope": "source.wisp",
+      "path": ".",
+      "file-types": [
+        "w",
+        "wisp"
+      ],
+      "highlights": "queries/highlights.scm",
+      "indents": "queries/indents.scm",
+      "locals": "queries/locals.scm",
+      "injection-regex": "^wisp$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "AGPL-3.0-or-later",
+    "description": "Wisp (SRFI-119) grammar for tree-sitter",
+    "authors": [],
+    "links": {
+      "repository": "https://github.com/tree-sitter/tree-sitter-wisp"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": false,
+    "node": true,
+    "python": false,
+    "rust": false,
+    "swift": false
+  }
+}
